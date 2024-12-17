@@ -3124,17 +3124,17 @@ public class DataNode extends ReconfigurableBase
 
         // read ack
         if (isClient) {
-          DNTransferAckProto closeAck =
-              DNTransferAckProto.parseFrom(PBHelperClient.vintPrefixed(in));
+          DNTransferAckProto closeAck = DNTransferAckProto.parseFrom(
+              PBHelperClient.vintPrefixed(in));
           LOG.debug("{}: close-ack={}", getClass().getSimpleName(), closeAck);
           if (closeAck.getStatus() != Status.SUCCESS) {
             if (closeAck.getStatus() == Status.ERROR_ACCESS_TOKEN) {
               throw new InvalidBlockTokenException(
-                  "Got access token error for connect ack, targets=" + Arrays.asList(targets));
+                  "Got access token error for connect ack, targets="
+                   + Arrays.asList(targets));
             } else {
-              throw new IOException(
-                  "Bad connect ack, targets=" + Arrays.asList(targets) + " status="
-                      + closeAck.getStatus());
+              throw new IOException("Bad connect ack, targets="
+                  + Arrays.asList(targets) + " status=" + closeAck.getStatus());
             }
           }
         } else {
@@ -3145,7 +3145,8 @@ public class DataNode extends ReconfigurableBase
           throw new RuntimeException(ie);
         }
         handleBadBlock(source, ie, false);
-        LOG.warn("{}:Failed to transfer {} to {}  got", bpReg, source, targets[0], ie);
+        LOG.warn("{}:Failed to transfer {} to {}  got",
+            bpReg, source, targets[0], ie);
       } catch (Throwable t) {
         LOG.error("Failed to transfer block {}", source, t);
         if (copyBlockCrossNamespace) {
@@ -4428,9 +4429,8 @@ public class DataNode extends ReconfigurableBase
       LOG.info(msg);
       throw new IOException(msg);
     }
-    LOG.info(getDatanodeInfo() + " copyBlock: Starting thread to transfer: " + "block:"
-        + sourceBlk + " from " + this.getDatanodeUuid() + " to " + targetDn.getDatanodeUuid()
-        + "(" + targetDn + ")");
+    LOG.info("{} copyBlock: Starting thread to transfer block {} from {} to {} ({})",
+        getDatanodeInfo(), sourceBlk, this.getDatanodeUuid(), targetDn.getDatanodeUuid(), targetDn);
     Future<?> result;
     if (this.getDatanodeUuid().equals(targetDn.getDatanodeUuid())) {
       result = copyBlockCrossNamespaceExecutor.submit(new LocalBlockCopy(sourceBlk, targetBlk));
@@ -4485,15 +4485,14 @@ public class DataNode extends ReconfigurableBase
 
         BlockLocalPathInfo srcBlpi = data.getBlockLocalPathInfo(sourceBlk);
         BlockLocalPathInfo dstBlpi = data.getBlockLocalPathInfo(targetBlk);
-        LOG.info(
-            getClass().getSimpleName() + ": Hardlinked " + sourceBlk + "( " + srcBlpi.getBlockPath()
-                + " " + srcBlpi.getMetaPath() + " ) " + "to " + targetBlk + "( "
-                + dstBlpi.getBlockPath() + " " + dstBlpi.getMetaPath() + " ) ");
+        LOG.info("{}: Hardlinked {} ( {} {} ) to {} ( {} {} ).", getClass().getSimpleName(),
+            sourceBlk, srcBlpi.getBlockPath(), srcBlpi.getMetaPath(), targetBlk,
+            dstBlpi.getBlockPath(), dstBlpi.getMetaPath());
 
         metrics.incrBlocksReplicatedViaHardlink();
       } catch (IOException e) {
-        LOG.warn("Local block copy for src : " + sourceBlk.getBlockName() + ", dst : "
-            + targetBlk.getBlockName() + " failed", e);
+        LOG.warn("Local block copy from {} to {} failed: {}", sourceBlk.getBlockName(),
+            targetBlk.getBlockName(), e);
         throw e;
       }
       return true;
