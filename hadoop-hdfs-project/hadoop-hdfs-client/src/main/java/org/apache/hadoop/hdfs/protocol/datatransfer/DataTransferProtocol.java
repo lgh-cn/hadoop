@@ -248,6 +248,7 @@ public interface DataTransferProtocol {
    * @param targetBlk the block to be writted.
    * @param targetBlockToken security token for accessing targetBlk.
    * @param targetDatanode the target datnode which sourceBlk will copy to as targetBlk.
+   * @throws IOException throws IOException
    */
   void copyBlockCrossNamespace(ExtendedBlock sourceBlk,
       Token<BlockTokenIdentifier> sourceBlockToken, ExtendedBlock targetBlk,
