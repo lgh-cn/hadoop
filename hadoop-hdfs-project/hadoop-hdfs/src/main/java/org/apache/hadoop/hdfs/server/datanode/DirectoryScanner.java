@@ -461,6 +461,7 @@ public class DirectoryScanner implements Runnable {
 
   /**
    * Reconcile differences between disk and in-memory blocks
+   * @throws IOException if an I/O error occurred
    */
   @VisibleForTesting
   public void reconcile() throws IOException {

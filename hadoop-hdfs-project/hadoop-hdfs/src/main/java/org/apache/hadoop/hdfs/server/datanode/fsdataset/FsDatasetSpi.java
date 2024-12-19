@@ -717,7 +717,7 @@ public interface FsDatasetSpi<V extends FsVolumeSpi> extends FSDatasetMBean {
    * @param dstBlock
    *          the destination block to which the srcBlock needs to be copied to
    * @throws IOException
-   *          throws IOException
+   *          if an I/O error occurred
    */
   void hardLinkOneBlock(ExtendedBlock srcBlock, ExtendedBlock dstBlock)
       throws IOException;
