@@ -599,6 +599,21 @@ public class DistributedFileSystem extends FileSystem
    * specifies an explicit storage policy for this file, overriding the
    * inherited policy.
    *
+   * @param f the file name to open
+   * @param permission file permission
+   * @param flag {@link CreateFlag}s to use for this stream
+   * @param bufferSize the size of the buffer to be used
+   * @param replication required block replication for the file
+   * @param blockSize block size
+   * @param progress the progress reporter
+   * @param checksumOpt checksum parameter. If null, the values
+   *         found in conf will be used
+   * @param favoredNodes favored nodes address list
+   * @param ecPolicyName file ecPolicyName
+   * @param storagePolicy file storage policy
+   * @throws IOException IO failure
+   * @see #setPermission(Path, FsPermission)
+   * @return output stream
    */
   public HdfsDataOutputStream create(final Path f,
       final FsPermission permission, final EnumSet<CreateFlag> flag,
