@@ -3017,9 +3017,7 @@ public class DataNode extends ReconfigurableBase
     final String clientname;
     final CachingStrategy cachingStrategy;
 
-    /**
-     * Throttle to block replication when data transfers or writes.
-     */
+    /** Throttle to block replication when data transfers or writes. */
     private DataTransferThrottler throttler;
     private boolean copyBlockCrossNamespace;
 
@@ -3028,13 +3026,14 @@ public class DataNode extends ReconfigurableBase
      * entire target list, the block, and the data.
      */
     DataTransfer(DatanodeInfo targets[], StorageType[] targetStorageTypes,
-        String[] targetStorageIds, ExtendedBlock source, BlockConstructionStage stage,
-        final String clientname) {
-      DataTransferProtocol.LOG.debug("{}: {} (numBytes={}), stage={}, "
-              + "clientname={}, targets={}, target storage types={}, " + "target storage IDs={}",
-          getClass().getSimpleName(), source, source.getNumBytes(), stage, clientname,
-          Arrays.asList(targets),
-          targetStorageTypes == null ? "[]" : Arrays.asList(targetStorageTypes),
+        String[] targetStorageIds, ExtendedBlock source,
+        BlockConstructionStage stage, final String clientname) {
+      DataTransferProtocol.LOG.debug("{}: {} (numBytes={}), stage={}, " +
+              "clientname={}, targets={}, target storage types={}, " +
+              "target storage IDs={}", getClass().getSimpleName(), source,
+          source.getNumBytes(), stage, clientname, Arrays.asList(targets),
+          targetStorageTypes == null ? "[]" :
+              Arrays.asList(targetStorageTypes),
           targetStorageIds == null ? "[]" : Arrays.asList(targetStorageIds));
       this.targets = targets;
       this.targetStorageTypes = targetStorageTypes;
@@ -3046,7 +3045,8 @@ public class DataNode extends ReconfigurableBase
       BPOfferService bpos = blockPoolManager.get(source.getBlockPoolId());
       bpReg = bpos.bpRegistration;
       this.clientname = clientname;
-      this.cachingStrategy = new CachingStrategy(true, getDnConf().readaheadLength);
+      this.cachingStrategy =
+          new CachingStrategy(true, getDnConf().readaheadLength);
       if (isTransfer(stage, clientname)) {
         this.throttler = xserver.getTransferThrottler();
       } else if (isWrite(stage)) {
@@ -3087,40 +3087,44 @@ public class DataNode extends ReconfigurableBase
         //
         // Header info
         //
-        Token<BlockTokenIdentifier> accessToken =
-            getBlockAccessToken(target, EnumSet.of(BlockTokenIdentifier.AccessMode.WRITE),
-                targetStorageTypes, targetStorageIds);
+        Token<BlockTokenIdentifier> accessToken = getBlockAccessToken(target,
+            EnumSet.of(BlockTokenIdentifier.AccessMode.WRITE),
+            targetStorageTypes, targetStorageIds);
 
-        long writeTimeout =
-            dnConf.socketWriteTimeout + HdfsConstants.WRITE_TIMEOUT_EXTENSION * (targets.length
-                - 1);
+        long writeTimeout = dnConf.socketWriteTimeout +
+            HdfsConstants.WRITE_TIMEOUT_EXTENSION * (targets.length - 1);
         OutputStream unbufOut = NetUtils.getOutputStream(sock, writeTimeout);
         InputStream unbufIn = NetUtils.getInputStream(sock);
-        DataEncryptionKeyFactory keyFactory = getDataEncryptionKeyFactoryForBlock(source);
-        IOStreamPair saslStreams =
-            saslClient.socketSend(sock, unbufOut, unbufIn, keyFactory, accessToken, bpReg);
+        DataEncryptionKeyFactory keyFactory =
+          getDataEncryptionKeyFactoryForBlock(source);
+        IOStreamPair saslStreams = saslClient.socketSend(sock, unbufOut,
+          unbufIn, keyFactory, accessToken, bpReg);
         unbufOut = saslStreams.out;
         unbufIn = saslStreams.in;
 
-        out = new DataOutputStream(
-            new BufferedOutputStream(unbufOut, DFSUtilClient.getSmallBufferSize(getConf())));
+        out = new DataOutputStream(new BufferedOutputStream(unbufOut,
+            DFSUtilClient.getSmallBufferSize(getConf())));
         in = new DataInputStream(unbufIn);
-        blockSender =
-            new BlockSender(source, 0, source.getNumBytes(), false, false, true, DataNode.this,
-                null, cachingStrategy);
-        DatanodeInfo srcNode = new DatanodeInfoBuilder().setNodeID(bpReg).build();
+        blockSender = new BlockSender(source, 0, source.getNumBytes(),
+            false, false, true, DataNode.this, null, cachingStrategy);
+        DatanodeInfo srcNode = new DatanodeInfoBuilder().setNodeID(bpReg)
+            .build();
 
-        String storageId = targetStorageIds.length > 0 ? targetStorageIds[0] : null;
-        new Sender(out).writeBlock(target, targetStorageTypes[0], accessToken, clientname, targets,
-            targetStorageTypes, srcNode, stage, 0, 0, 0, 0, blockSender.getChecksum(),
-            cachingStrategy, false, false, null, storageId, targetStorageIds);
+        String storageId = targetStorageIds.length > 0 ?
+            targetStorageIds[0] : null;
+        new Sender(out).writeBlock(target, targetStorageTypes[0], accessToken,
+            clientname, targets, targetStorageTypes, srcNode,
+            stage, 0, 0, 0, 0, blockSender.getChecksum(), cachingStrategy,
+            false, false, null, storageId,
+            targetStorageIds);
 
         // send data & checksum
         blockSender.sendBlock(out, unbufOut, throttler);
 
         // no response necessary
-        LOG.info("{}, at {}: Transmitted {} (numBytes={}) to {}", getClass().getSimpleName(),
-            DataNode.this.getDisplayName(), source, source.getNumBytes(), curTarget);
+        LOG.info("{}, at {}: Transmitted {} (numBytes={}) to {}",
+            getClass().getSimpleName(), DataNode.this.getDisplayName(),
+            source, source.getNumBytes(), curTarget);
 
         // read ack
         if (isClient) {
