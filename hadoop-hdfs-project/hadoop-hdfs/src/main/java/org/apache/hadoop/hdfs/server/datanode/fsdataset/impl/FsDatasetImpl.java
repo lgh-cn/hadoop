@@ -3867,24 +3867,30 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
 
   @Override
   public void hardLinkOneBlock(ExtendedBlock srcBlock, ExtendedBlock dstBlock) throws IOException {
-    BlockLocalPathInfo blpi = getBlockLocalPathInfo(srcBlock);
     FsVolumeImpl v = getVolume(srcBlock);
+    ReplicaInfo srcReplicaInfo = getReplicaInfo(srcBlock);
 
+    File dstTmpDir = v.getBlockPoolSlice(dstBlock.getBlockPoolId()).getTmpDir();
+    File dstMeta = new File(dstTmpDir,
+        DatanodeUtil.getMetaName(dstBlock.getBlockName(), dstBlock.getGenerationStamp()));
+    File dstBlockFile = new File(dstTmpDir, dstBlock.getBlockName());
+
+    File files[] = hardLinkBlockFiles(srcReplicaInfo, dstMeta, dstBlockFile);
+
+    ReplicaInfo dstReplicaInfo = new ReplicaBuilder(ReplicaState.TEMPORARY)
+        .setBlockId(dstBlock.getBlockId())
+        .setGenerationStamp(dstBlock.getGenerationStamp())
+        .setFsVolume(v)
+        .setDirectoryToUse(files[0].getParentFile())
+        .setBytesToReserve(0)
+        .build();
+    dstReplicaInfo.setNumBytes(files[1].length());
     try (AutoCloseableLock lock = lockManager.writeLock(LockLevel.VOLUME, dstBlock.getBlockPoolId(),
         v.getStorageID())) {
-      File src = new File(blpi.getBlockPath());
-      File srcMeta = new File(blpi.getMetaPath());
-      BlockPoolSlice dstBPS = v.getBlockPoolSlice(dstBlock.getBlockPoolId());
-      File dstBlockFile = dstBPS.hardLinkOneBlock(src, srcMeta, dstBlock.getLocalBlock());
-
-      ReplicaInfo replicaInfo =
-          new LocalReplicaInPipeline(dstBlock.getBlockId(), dstBlock.getGenerationStamp(), v,
-              dstBlockFile.getParentFile(), dstBlock.getLocalBlock().getNumBytes());
-      dstBlockFile = dstBPS.addFinalizedBlock(dstBlock.getLocalBlock(), replicaInfo);
-      replicaInfo = new FinalizedReplica(dstBlock.getLocalBlock(), getVolume(srcBlock),
-          dstBlockFile.getParentFile());
-      volumeMap.add(dstBlock.getBlockPoolId(), replicaInfo);
+      volumeMap.add(dstBlock.getBlockPoolId(), dstReplicaInfo);
     }
+
+    finalizeNewReplica(dstReplicaInfo, dstBlock);
   }
 }
 
